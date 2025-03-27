@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
