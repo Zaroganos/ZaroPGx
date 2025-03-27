@@ -28,6 +28,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./data:/pharmcat/data
+      - pharmcat-jar:/pharmcat
     ports:
       - "8080:8080"
     healthcheck:
@@ -51,10 +52,10 @@ services:
         condition: service_healthy
     environment:
       - DATA_DIR=/data
-      - PHARMCAT_HOST=pgx_pharmcat
+      - PHARMCAT_JAR=/pharmcat/pharmcat.jar
     volumes:
       - ./data:/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - pharmcat-jar:/pharmcat:ro
     ports:
       - "5001:5000"
     healthcheck:
@@ -120,6 +121,8 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  pharmcat-jar:
     driver: local
 
 networks:
