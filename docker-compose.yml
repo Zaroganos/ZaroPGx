@@ -33,7 +33,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "/pharmcat/health.sh"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -59,7 +59,7 @@ services:
     ports:
       - "5001:5000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "/app/health.sh"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -111,7 +111,7 @@ services:
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "/app/health.sh"]
       interval: 30s
       timeout: 15s
       retries: 5

@@ -5,15 +5,26 @@ WORKDIR /app
 # Install curl for health checks
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn==21.2.0
 
 # Copy the wrapper script
 COPY pharmcat_wrapper.py .
+
+# Create health check script
+RUN echo '#!/bin/sh\n\
+if pgrep -f "gunicorn" > /dev/null; then\n\
+  curl -s http://localhost:5000/health > /dev/null\n\
+  exit $?\n\
+else\n\
+  exit 1\n\
+fi' > /app/health.sh && chmod +x /app/health.sh
 
 # Create data directory
 RUN mkdir -p /data
@@ -26,5 +37,5 @@ EXPOSE 5000
 ENV PYTHONUNBUFFERED=1
 ENV DATA_DIR=/data
 
-# Command to run the service
-CMD ["python", "pharmcat_wrapper.py"] 
+# Command to run the service with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "pharmcat_wrapper:app", "--timeout", "120", "--workers", "2"] 

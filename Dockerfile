@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     lsb-release \
     curl \
+    procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -44,6 +45,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Create directories for data and reports
 RUN mkdir -p /app/data/uploads /app/data/reports
+
+# Copy health check script
+COPY docker/app/health.sh /app/health.sh
+RUN chmod +x /app/health.sh
 
 # Copy application code
 COPY . .
