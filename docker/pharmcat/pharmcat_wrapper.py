@@ -12,6 +12,7 @@ import logging
 import subprocess
 import tempfile
 import shutil
+import time
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from flask import Flask, request, jsonify
@@ -30,13 +31,17 @@ app = Flask(__name__)
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
+print("Starting PharmCAT wrapper service...")
+
 # Make sure our health endpoint is super simple and reliable
 @app.route('/health', methods=['GET'])
 def health_check():
     """API endpoint to check if the service is running."""
+    logger.info("Health check called")
     return jsonify({
         "status": "ok",
-        "service": "pharmcat-wrapper"
+        "service": "pharmcat-wrapper",
+        "timestamp": time.time()
     })
 
 def run_pharmcat(vcf_path: str) -> Dict[str, Any]:

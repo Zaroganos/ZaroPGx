@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     procps \
+    netcat \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,12 +18,21 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 # Copy the wrapper script
 COPY pharmcat_wrapper.py .
 
-# Create health check script
+# Create health check script with better timeout handling
 RUN echo '#!/bin/sh\n\
-if pgrep -f "gunicorn" > /dev/null; then\n\
-  curl -s http://localhost:5000/health > /dev/null\n\
-  exit $?\n\
+# First check if port 5000 is listening\n\
+if ! nc -z localhost 5000; then\n\
+  echo "Port 5000 is not open yet"\n\
+  exit 1\n\
+fi\n\
+\n\
+# Then check if the health endpoint responds\n\
+response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health)\n\
+if [ "$response" = "200" ]; then\n\
+  echo "Health endpoint responding with 200 OK"\n\
+  exit 0\n\
 else\n\
+  echo "Health endpoint returned $response, expected 200"\n\
   exit 1\n\
 fi' > /app/health.sh && chmod +x /app/health.sh
 
