@@ -91,7 +91,7 @@ ZaroPGx/
 
 ## License
 
-[MIT License](LICENSE)
+[AGPLv3](LICENSE)
 
 ## Acknowledgements
 
@@ -139,7 +139,7 @@ Services share data through:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ZaroPGx.git
+   git clone https://github.com/Zaroganos/ZaroPGx.git
    cd ZaroPGx
    ```
 

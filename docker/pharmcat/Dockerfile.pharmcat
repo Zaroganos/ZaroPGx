@@ -9,11 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Download PharmCAT release (specify version for reproducibility)
-ENV PHARMCAT_VERSION=3.0.0
-RUN wget -q https://github.com/PharmGKB/PharmCAT/releases/download/v${PHARMCAT_VERSION}/pharmcat.zip \
-    && unzip pharmcat.zip \
-    && rm pharmcat.zip \
+# Download PharmCAT release (using known working version)
+ENV PHARMCAT_VERSION=2.15.5
+RUN wget -q https://github.com/PharmGKB/PharmCAT/releases/download/v${PHARMCAT_VERSION}/pharmcat-${PHARMCAT_VERSION}-all.jar \
+    && mv pharmcat-${PHARMCAT_VERSION}-all.jar pharmcat.jar \
     && chmod +x pharmcat.jar
 
 # Create data directory
