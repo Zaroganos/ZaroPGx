@@ -28,9 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Java for PharmCAT (optional, can be separate container)
+# Install default JRE (using default-jre which is available in the repos)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-11-jre-headless \
+    default-jre \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
