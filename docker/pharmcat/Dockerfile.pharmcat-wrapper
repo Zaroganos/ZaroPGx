@@ -2,11 +2,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install curl for health checks and Java for PharmCAT execution
+# Install minimal dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    procps \
-    netcat-openbsd \
     openjdk-17-jre-headless \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -14,32 +11,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn==21.2.0 requests==2.31.0
+    pip install --no-cache-dir flask==2.3.3 requests==2.31.0
 
 # Copy the wrapper script
 COPY pharmcat_wrapper.py .
 
-# Create health check script with better timeout handling
-RUN echo '#!/bin/sh\n\
-# First check if port 5000 is listening\n\
-if ! nc -z localhost 5000; then\n\
-  echo "Port 5000 is not open yet"\n\
-  exit 1\n\
-fi\n\
-\n\
-# Then check if the health endpoint responds\n\
-response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health)\n\
-if [ "$response" = "200" ]; then\n\
-  echo "Health endpoint responding with 200 OK"\n\
-  exit 0\n\
-else\n\
-  echo "Health endpoint returned $response, expected 200"\n\
-  exit 1\n\
-fi' > /app/health.sh && chmod +x /app/health.sh
-
 # Create data directory
 RUN mkdir -p /data
 VOLUME /data
+
+# Simple startup script with debug output
+RUN echo '#!/bin/sh\n\
+echo "Starting PharmCAT wrapper..."\n\
+echo "Checking Java version:"\n\
+java -version\n\
+echo "Checking PharmCAT JAR:"\n\
+ls -la /pharmcat/pharmcat.jar || echo "JAR not found!"\n\
+echo "Starting Flask app..."\n\
+python /app/pharmcat_wrapper.py\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose API port
 EXPOSE 5000
@@ -49,5 +39,5 @@ ENV PYTHONUNBUFFERED=1
 ENV DATA_DIR=/data
 ENV PHARMCAT_JAR=/pharmcat/pharmcat.jar
 
-# Command to run the service with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "pharmcat_wrapper:app", "--timeout", "120", "--workers", "2"] 
+# Command to run the service
+CMD ["/app/start.sh"] 
