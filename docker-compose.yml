@@ -99,8 +99,9 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - PHARMCAT_API_URL=http://pharmcat-wrapper:5000
       - ALDY_API_URL=http://aldy:5000
+      - PYTHONPATH=/
     volumes:
-      - ./app:/app
+      - .:/  # Mount the entire project directory to root
       - ./data:/data
     ports:
       - "8765:8000"
@@ -111,6 +112,7 @@ services:
       retries: 1
     networks:
       - pgx-network
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 volumes:
   pgdata:
