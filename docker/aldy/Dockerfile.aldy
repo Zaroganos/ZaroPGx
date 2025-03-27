@@ -1,0 +1,30 @@
+FROM python:3.10-slim
+
+WORKDIR /aldy
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libz-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Aldy and dependencies
+RUN pip install --no-cache-dir \
+    aldy==3.0 \
+    numpy==1.24.2 \
+    pysam==0.20.0 \
+    scikit-learn==1.2.2 \
+    scipy==1.10.1
+
+# Copy wrapper script
+COPY aldy_wrapper.py .
+
+# Volume for data
+VOLUME /data
+
+# Set permissions
+RUN chmod +x aldy_wrapper.py
+
+# Command to run the service
+ENTRYPOINT ["python", "aldy_wrapper.py"] 

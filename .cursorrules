@@ -1,0 +1,79 @@
+{
+  "projectContext": {
+    "fileAssociations": {
+      "priorityPatterns": [
+        "**/*.py",          // Python backend (FastAPI, data processing)
+        "**/Dockerfile*",   // Containerization logic
+        "**/*.sql",         // PostgreSQL schema/CPIC queries
+        "**/*.jsx?",        // React frontend (if using)
+        "**/*.sh",          // Shell scripts for allele calling
+        "**/*.yml",          // Docker Compose configs
+        "**/requirements.txt" // Python dependencies
+      ],
+      "ignorePatterns": [
+        "**/node_modules/**",
+        "**/*.pyc",
+        "**/__pycache__/**"
+      ]
+    },
+    "languageHints": {
+      "python": {
+        "framework": "FastAPI",
+        "libraries": [
+          "sqlalchemy", "psycopg2", "pandas", "biopython",
+          "weasyprint", "jinja2", "pydantic"
+        ]
+      },
+      "javascript": {
+        "framework": "React",
+        "libraries": ["chart.js", "d3.js", "pdfmake"]
+      },
+      "sql": {
+        "dialect": "PostgreSQL",
+        "schemas": ["cpic", "user_data", "reports"]
+      }
+    },
+    "keyConcepts": [
+      "pharmacogenomics", "cpic", "star_allele", "cyp2d6",
+      "vcf_parsing", "hippa_compliance", "docker_networking",
+      "pharmcat", "aldy", "stargazer"
+    ]
+  },
+  "codeActions": {
+    "autocomplete": {
+      "prioritize": [
+        "Database Schema Patterns",
+        "PGx Nomenclature (e.g., CYP2C19*17)",
+        "Docker Port Mapping",
+        "VCF Parsing Snippets",
+        "CPIC Guideline Implementation"
+      ]
+    },
+    "securityEnforcement": {
+      "warnAbout": [
+        "Raw SQL Strings (use SQLAlchemy!)",
+        "Unencrypted Patient Data",
+        "Missing RBAC Checks",
+        "Hardcoded Database Credentials"
+      ]
+    }
+  },
+  "workflowHints": {
+    "commonDirectories": {
+      "backend": "/app/api",
+      "cpic_integration": "/db/migrations/cpic",
+      "allele_calling": "/app/pharmcat_wrapper",
+      "report_templates": "/app/reports/templates"
+    },
+    "cliCommands": {
+      "docker": [
+        "docker compose up -d --build pharmcat-service",
+        "docker exec -it pgx_app psql -U cpic_user -d cpic_db"
+      ],
+      "testing": [
+        "pytest tests/ --cov=app --cov-report=html",
+        "curl -X POST -F 'genome=@sample.vcf' http://localhost:8000/generate-report"
+      ]
+    }
+  }
+}
