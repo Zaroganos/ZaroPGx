@@ -21,19 +21,17 @@ services:
     networks:
       - pgx-network
 
-  # PharmCAT Service for allele calling
+  # PharmCAT Service - using official Docker image
   pharmcat:
-    build:
-      context: ./docker/pharmcat
-      dockerfile: Dockerfile.pharmcat
+    image: pgkb/pharmcat
     container_name: pgx_pharmcat
     restart: unless-stopped
     volumes:
-      - ./data:/data
+      - ./data:/pharmcat/data
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "/pharmcat/health.sh"]
+      test: ["CMD", "java", "-jar", "/pharmcat/pharmcat.jar", "--version"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -53,9 +51,10 @@ services:
         condition: service_healthy
     environment:
       - DATA_DIR=/data
-      - PHARMCAT_API_URL=http://pharmcat:8080
+      - PHARMCAT_HOST=pgx_pharmcat
     volumes:
       - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "5001:5000"
     healthcheck:
