@@ -35,8 +35,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 15s
+      retries: 5
+      start_period: 30s
     networks:
       - pgx-network
 
@@ -60,9 +61,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      timeout: 15s
+      retries: 5
+      start_period: 45s
     networks:
       - pgx-network
 
@@ -80,8 +81,8 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 15s
+      retries: 5
     networks:
       - pgx-network
 
@@ -112,9 +113,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
     networks:
       - pgx-network
 

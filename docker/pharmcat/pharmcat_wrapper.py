@@ -30,6 +30,15 @@ app = Flask(__name__)
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
+# Make sure our health endpoint is super simple and reliable
+@app.route('/health', methods=['GET'])
+def health_check():
+    """API endpoint to check if the service is running."""
+    return jsonify({
+        "status": "ok",
+        "service": "pharmcat-wrapper"
+    })
+
 def run_pharmcat(vcf_path: str) -> Dict[str, Any]:
     """
     Run PharmCAT on the provided VCF file and return results.
@@ -118,14 +127,6 @@ def extract_genotypes(results: Dict[str, Any]) -> Dict[str, str]:
             
     return genotypes
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """API endpoint to check if the service is running."""
-    return jsonify({
-        "status": "ok",
-        "service": "pharmcat-wrapper"
-    })
-
 @app.route('/genotype', methods=['POST'])
 def process_genotype():
     """
@@ -173,4 +174,6 @@ def process_genotype():
     return jsonify(pharmcat_results)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) 
+    logger.info("Starting PharmCAT wrapper service on 0.0.0.0:5000")
+    # Add host='0.0.0.0' to make sure it's accessible from outside the container
+    app.run(host='0.0.0.0', port=5000, debug=False) 

@@ -6,9 +6,14 @@ from datetime import datetime, timedelta
 from typing import Optional
 import os
 from dotenv import load_dotenv
+import logging
 
 from app.api.routes import upload_router, report_router
 from app.api.models import Token, TokenData
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -91,6 +96,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def root():
     return {"message": "Welcome to ZaroPGx API", "docs": "/docs"}
 
+# Make the health check endpoint simple and dependency-free
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.utcnow()} 
+    logger.info("Health check called")
+    return {"status": "healthy", "timestamp": str(datetime.utcnow())} 
