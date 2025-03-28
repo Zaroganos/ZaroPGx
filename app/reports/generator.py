@@ -57,13 +57,22 @@ def generate_pdf_report(
         template = env.get_template("report_template.html")
         html_content = template.render(**report_data)
         
-        # Generate PDF from HTML
-        generate_pdf_from_html(html_content, report_path)
-        
-        logger.info(f"PDF report generated successfully: {report_path}")
-        return report_path
+        try:
+            # Generate PDF from HTML
+            generate_pdf_from_html(html_content, report_path)
+            logger.info(f"PDF report generated successfully: {report_path}")
+            return report_path
+        except Exception as pdf_error:
+            # If PDF generation fails, create an HTML file as fallback
+            logger.error(f"PDF generation failed, creating HTML fallback: {str(pdf_error)}")
+            html_fallback_path = report_path.replace('.pdf', '.html')
+            with open(html_fallback_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            logger.info(f"HTML fallback report generated: {html_fallback_path}")
+            return html_fallback_path
+    
     except Exception as e:
-        logger.error(f"Error generating PDF report: {str(e)}")
+        logger.error(f"Error generating report: {str(e)}")
         raise
 
 def generate_pdf_from_html(html_content: str, output_path: str) -> None:
@@ -80,14 +89,22 @@ def generate_pdf_from_html(html_content: str, output_path: str) -> None:
         if os.path.exists(CSS_FILE):
             css = CSS(filename=CSS_FILE)
         
-        # Generate PDF
+        # Generate PDF - Using string_io instead of string to avoid passing positional arguments
         html = HTML(string=html_content)
         if css:
-            html.write_pdf(output_path, stylesheets=[css])
+            html.write_pdf(target=output_path, stylesheets=[css])
         else:
-            html.write_pdf(output_path)
+            html.write_pdf(target=output_path)
     except Exception as e:
         logger.error(f"Error converting HTML to PDF: {str(e)}")
+        # Create simple text file as fallback if PDF generation fails
+        try:
+            with open(output_path.replace('.pdf', '.txt'), 'w') as f:
+                f.write(f"PDF GENERATION FAILED: {str(e)}\n\nRaw HTML content below:\n\n")
+                f.write(html_content)
+            logger.info(f"Created fallback text file at {output_path.replace('.pdf', '.txt')}")
+        except:
+            pass
         raise
 
 def get_disclaimer() -> str:

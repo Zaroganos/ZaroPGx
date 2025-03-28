@@ -213,14 +213,18 @@ async def upload_vcf_file(
             output_path=str(html_path)
         )
         
+        # Determine if pdf_report is actually PDF or fallback HTML
+        is_pdf_fallback = pdf_report.endswith('.html')
+        
         return templates.TemplateResponse(
             "index.html", 
             {
                 "request": request, 
-                "message": f"File {vcfFile.filename} processed successfully! Reports generated.",
+                "message": f"File {vcfFile.filename} processed successfully! Reports generated." + 
+                           (" (PDF generation failed, HTML fallback used)" if is_pdf_fallback else ""),
                 "success": True,
                 "report_id": report_id,
-                "report_pdf": f"/reports/{patient_id}/{report_id}.pdf",
+                "report_pdf": f"/reports/{patient_id}/{report_id}" + (".html" if is_pdf_fallback else ".pdf"),
                 "report_html": f"/reports/{patient_id}/{report_id}.html"
             }
         )
