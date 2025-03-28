@@ -1,10 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, RedirectResponse
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
 import os
+import shutil
+from pathlib import Path
 from dotenv import load_dotenv
 import logging
 
@@ -22,6 +27,15 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")  # In production, use env var
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Directory setup
+BASE_DIR = Path(__file__).resolve().parent
+TEMPLATE_DIR = BASE_DIR / "templates"
+UPLOAD_DIR = Path("/data/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# Initialize templates
+templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -92,12 +106,54 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/")
-async def root():
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api")
+async def api_root():
     return {"message": "Welcome to ZaroPGx API", "docs": "/docs"}
 
 # Make the health check endpoint simple and dependency-free
 @app.get("/health")
 async def health_check():
     logger.info("Health check called")
-    return {"status": "healthy", "timestamp": str(datetime.utcnow())} 
+    return {"status": "healthy", "timestamp": str(datetime.utcnow())}
+
+@app.post("/upload-vcf")
+async def upload_vcf_file(
+    request: Request,
+    vcfFile: UploadFile = File(...),
+    sampleId: str = Form(None)
+):
+    logger.info(f"Received VCF file upload: {vcfFile.filename}, Sample ID: {sampleId}")
+    
+    # Generate a unique filename if no sample ID provided
+    filename = f"{sampleId or 'sample'}-{datetime.now().strftime('%Y%m%d%H%M%S')}.vcf"
+    file_path = UPLOAD_DIR / filename
+    
+    # Save the uploaded file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(vcfFile.file, buffer)
+        
+        # In a real implementation, you would call the PharmCAT and Aldy services here
+        # For now, just return a success message
+        return templates.TemplateResponse(
+            "index.html", 
+            {
+                "request": request, 
+                "message": f"File {vcfFile.filename} uploaded successfully! Processing will begin shortly.",
+                "success": True
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error processing file upload: {str(e)}")
+        return templates.TemplateResponse(
+            "index.html", 
+            {
+                "request": request, 
+                "message": f"Error processing file: {str(e)}",
+                "success": False
+            }
+        ) 

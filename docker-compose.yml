@@ -31,6 +31,8 @@ services:
       - pharmcat-jar:/pharmcat
     ports:
       - "2323:8080"
+    environment:
+      - JAVA_OPTS=-Xmx1g
     healthcheck:
       test: ["CMD", "echo", "Healthcheck disabled for debugging"]
       interval: 10s
@@ -38,6 +40,9 @@ services:
       retries: 1
     networks:
       - pgx-network
+    # Since we're using the PharmCAT wrapper to make direct JAR calls,
+    # we just need to keep this container running
+    command: ["sh", "-c", "echo 'PharmCAT service running...' && tail -f /dev/null"]
 
   # PharmCAT Wrapper Service
   pharmcat-wrapper:

@@ -16,10 +16,15 @@ RUN pip install --no-cache-dir \
     pysam==0.20.0 \
     scikit-learn==1.2.2 \
     scipy==1.10.1 \
-    flask==3.1.0
+    flask==3.1.0 \
+    gunicorn==21.2.0
 
 # Copy wrapper script
 COPY aldy_wrapper.py .
+
+# Create start script
+RUN echo '#!/bin/sh\necho "Starting Aldy wrapper service..."\ngunicorn --bind 0.0.0.0:5000 aldy_wrapper:app' > /aldy/start.sh && \
+    chmod +x /aldy/start.sh
 
 # Volume for data
 VOLUME /data
@@ -28,4 +33,4 @@ VOLUME /data
 RUN chmod +x aldy_wrapper.py
 
 # Command to run the service
-ENTRYPOINT ["python", "aldy_wrapper.py"] 
+CMD ["/aldy/start.sh"] 
