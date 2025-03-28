@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # PharmCAT service configuration
-PHARMCAT_SERVICE_URL = os.environ.get("PHARMCAT_SERVICE_URL", "http://pharmcat-service:8080")
+PHARMCAT_SERVICE_URL = os.environ.get("PHARMCAT_SERVICE_URL", "http://pharmcat:8080")
 PHARMCAT_DOCKER_IMAGE = os.environ.get("PHARMCAT_DOCKER_IMAGE", "pgkb/pharmcat:latest")
 PHARMCAT_JAR_PATH = os.environ.get("PHARMCAT_JAR_PATH", "/app/lib/pharmcat.jar")
 
@@ -28,13 +28,26 @@ def call_pharmcat_service(input_file: str) -> Dict[str, Any]:
     try:
         logger.info(f"Calling PharmCAT service for file: {input_file}")
         
-        # Check if we're using REST API or direct JAR execution
-        if os.path.exists(PHARMCAT_JAR_PATH):
-            # Direct JAR execution
+        # Try direct JAR execution or wrapper API
+        pharmcat_jar = os.environ.get("PHARMCAT_JAR_PATH", "/pharmcat/pharmcat.jar")
+        
+        # First check if we can access the JAR directly
+        if os.path.exists(pharmcat_jar):
+            logger.info(f"Found PharmCAT JAR at {pharmcat_jar}, using direct execution")
             results = run_pharmcat_jar(input_file)
         else:
-            # REST API call
-            results = call_pharmcat_api(input_file)
+            # Try the wrapper API instead
+            logger.info("PharmCAT JAR not found, trying wrapper API")
+            pharmcat_api_url = os.environ.get("PHARMCAT_API_URL", "http://pharmcat-wrapper:5000")
+            with open(input_file, 'rb') as f:
+                files = {'file': f}
+                response = requests.post(
+                    f"{pharmcat_api_url}/process",
+                    files=files,
+                    timeout=300  # 5 minute timeout
+                )
+                response.raise_for_status()
+                results = response.json()
             
         return results
     except Exception as e:
@@ -89,12 +102,14 @@ def run_pharmcat_jar(input_file: str) -> Dict[str, Any]:
     try:
         # Create a temporary directory for output
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Get the JAR path from environment or use default
+            pharmcat_jar = os.environ.get("PHARMCAT_JAR_PATH", "/pharmcat/pharmcat.jar")
             logger.info(f"Running PharmCAT JAR on file: {input_file}, output dir: {temp_dir}")
             
             # Execute PharmCAT JAR
             command = [
-                "java", "-jar", PHARMCAT_JAR_PATH,
-                "-m", "23andme",  # Specify 23andMe format
+                "java", "-jar", pharmcat_jar,
+                "-m", "vcf",  # Use VCF mode instead of 23andme
                 "-i", input_file,
                 "-o", temp_dir
             ]

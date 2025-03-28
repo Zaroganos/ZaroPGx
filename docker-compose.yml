@@ -103,6 +103,8 @@ services:
       - DATABASE_URL=postgresql://cpic_user:${POSTGRES_PASSWORD}@db:5432/cpic_db
       - SECRET_KEY=${SECRET_KEY}
       - PHARMCAT_API_URL=http://pharmcat-wrapper:5000
+      - PHARMCAT_SERVICE_URL=http://pharmcat:8080
+      - PHARMCAT_JAR_PATH=/pharmcat/pharmcat.jar
       - ALDY_API_URL=http://aldy:5000
       - PYTHONPATH=/app
     volumes:

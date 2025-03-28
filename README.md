@@ -1,6 +1,6 @@
 # ZaroPGx - Pharmacogenomic Report Generator
 
-A containerized pharmacogenomic report generator that processes genetic data and generates clinical reports based on CPIC guidelines.
+A containerized pharmacogenomic report generator that processes genetic data and generates clinical reports based on CPIC guidelines. The system focuses on pharmacogenomic analysis for psychiatric and neurological medications.
 
 ## Features
 
@@ -9,6 +9,9 @@ A containerized pharmacogenomic report generator that processes genetic data and
 - Generate PDF and interactive HTML reports
 - HIPAA-compliant data handling
 - RESTful API with authentication
+- User-friendly web interface for file uploads
+- Comprehensive gene coverage including CYP2D6, CYP2C19, CYP2C9, and others
+- Interactive HTML reports with visualizations
 
 ## Architecture
 
@@ -18,6 +21,7 @@ The application consists of several containerized services:
 2. **FastAPI Backend**: Handles file uploads, report generation, and API endpoints
 3. **PharmCAT Service**: Performs allele calling for 23andMe data
 4. **Aldy Service**: Specialized in CYP2D6 calling from VCF files
+5. **PharmCAT Wrapper**: Python wrapper providing a REST API for PharmCAT
 
 ## Setup
 
@@ -25,6 +29,8 @@ The application consists of several containerized services:
 
 - Docker and Docker Compose
 - Git
+- 8GB RAM minimum
+- 20GB free disk space
 
 ### Installation
 
@@ -45,12 +51,19 @@ The application consists of several containerized services:
    docker-compose up -d
    ```
 
-4. Access the API at `http://localhost:8000`
-   - API documentation is available at `http://localhost:8000/docs`
+4. Access the application:
+   - Web UI: http://localhost:8765
+   - API documentation: http://localhost:8765/docs
 
 ## Usage
 
-### Uploading genetic data
+### Using the Web Interface
+
+1. Open the web interface at http://localhost:8765
+2. Upload a VCF file using the upload form
+3. View and download the generated reports
+
+### Uploading genetic data via API
 
 ```bash
 curl -X POST -F 'file=@sample.txt' -F 'patient_identifier=patient123' \
@@ -58,7 +71,7 @@ curl -X POST -F 'file=@sample.txt' -F 'patient_identifier=patient123' \
   http://localhost:8000/upload/23andme
 ```
 
-### Generating a report
+### Generating a report via API
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -66,6 +79,13 @@ curl -X POST -H "Content-Type: application/json" \
   -d '{"patient_id":"1","file_id":"1","report_type":"comprehensive"}' \
   http://localhost:8000/reports/generate
 ```
+
+### Sample Data
+
+The repository includes sample VCF files for testing:
+
+- `sample_cyp2c19.vcf` - Sample with CYP2C19 variants
+- `sample_cyp2d6.vcf` - Sample with CYP2D6 variants
 
 ## Development
 
@@ -159,6 +179,7 @@ Services share data through:
    - PharmCAT Service: http://localhost:8080
    - PharmCAT Wrapper: http://localhost:5001
    - Aldy Service: http://localhost:5002
+   - Web UI: http://localhost:8765
 
 ## Development
 
@@ -180,6 +201,12 @@ Services communicate with each other using their service names as hostnames:
 - PharmCAT: `pharmcat:8080`
 - PharmCAT Wrapper: `pharmcat-wrapper:5000`
 - Aldy: `aldy:5000`
+
+## Troubleshooting
+
+- **Service Connection Issues**: Check Docker network configuration
+- **File Processing Errors**: Ensure VCF file format is valid
+- **Report Generation Fails**: Check weasyprint dependencies
 
 ## Contributing
 

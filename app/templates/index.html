@@ -51,6 +51,13 @@
                 {% if message %}
                 <div class="alert {{ 'alert-success' if success else 'alert-danger' }}" role="alert">
                     {{ message }}
+                    {% if success and report_id %}
+                    <div class="mt-3">
+                        <p>Your report is ready!</p>
+                        <a href="{{ report_pdf }}" target="_blank" class="btn btn-primary">View PDF Report</a>
+                        <a href="{{ report_html }}" target="_blank" class="btn btn-info">View Interactive Report</a>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 

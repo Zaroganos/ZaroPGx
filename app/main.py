@@ -12,9 +12,13 @@ import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 import logging
+import requests
+import json
 
 from app.api.routes import upload_router, report_router
 from app.api.models import Token, TokenData
+from app.pharmcat_wrapper.pharmcat_client import call_pharmcat_service
+from app.reports.generator import generate_pdf_report, create_interactive_html_report
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +50,9 @@ app = FastAPI(
 
 # OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Set up static file serving for reports
+app.mount("/reports", StaticFiles(directory="/data/reports"), name="reports")
 
 # Add CORS middleware
 app.add_middleware(
@@ -137,14 +144,84 @@ async def upload_vcf_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(vcfFile.file, buffer)
         
-        # In a real implementation, you would call the PharmCAT and Aldy services here
-        # For now, just return a success message
+        # Call PharmCAT service for analysis
+        pharmcat_results = call_pharmcat_service(str(file_path))
+        logger.info(f"PharmCAT analysis completed for {filename}")
+        
+        # Process with Aldy service (for CYP2D6)
+        try:
+            with open(file_path, 'rb') as f:
+                aldy_url = os.environ.get("ALDY_API_URL", "http://aldy:5000")
+                aldy_response = requests.post(
+                    f"{aldy_url}/genotype",
+                    files={"file": f},
+                    data={"gene": "CYP2D6"}
+                )
+                aldy_response.raise_for_status()
+                aldy_results = aldy_response.json()
+                logger.info(f"Aldy analysis completed for {filename}")
+        except Exception as aldy_error:
+            logger.error(f"Error calling Aldy service: {str(aldy_error)}")
+            aldy_results = {"status": "error", "error": str(aldy_error)}
+        
+        # Generate patient ID if none provided
+        patient_id = sampleId or f"PATIENT_{datetime.now().strftime('%Y%m%d%H%M')}"
+        
+        # Create a report from the results
+        diplotypes = []
+        
+        # Extract PharmCAT diplotypes
+        for gene, data in pharmcat_results.get("genes", {}).items():
+            diplotypes.append({
+                "gene": gene,
+                "diplotype": data.get("diplotype", "Unknown"),
+                "phenotype": data.get("phenotype", "Unknown"),
+                "source": "PharmCAT"
+            })
+        
+        # Add CYP2D6 from Aldy if available
+        if aldy_results.get("status") == "success":
+            diplotypes.append({
+                "gene": "CYP2D6",
+                "diplotype": aldy_results.get("diplotype", "Unknown"),
+                "phenotype": "See activity score",
+                "source": "Aldy"
+            })
+        
+        # Generate report paths
+        reports_dir = Path("/data/reports") / patient_id
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        
+        report_id = f"PGX_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        pdf_path = reports_dir / f"{report_id}.pdf"
+        html_path = reports_dir / f"{report_id}.html"
+        
+        # Generate reports
+        pdf_report = generate_pdf_report(
+            patient_id=patient_id,
+            report_id=report_id,
+            diplotypes=diplotypes,
+            recommendations=pharmcat_results.get("recommendations", []),
+            report_path=str(pdf_path)
+        )
+        
+        html_report = create_interactive_html_report(
+            patient_id=patient_id,
+            report_id=report_id,
+            diplotypes=diplotypes,
+            recommendations=pharmcat_results.get("recommendations", []),
+            output_path=str(html_path)
+        )
+        
         return templates.TemplateResponse(
             "index.html", 
             {
                 "request": request, 
-                "message": f"File {vcfFile.filename} uploaded successfully! Processing will begin shortly.",
-                "success": True
+                "message": f"File {vcfFile.filename} processed successfully! Reports generated.",
+                "success": True,
+                "report_id": report_id,
+                "report_pdf": f"/reports/{patient_id}/{report_id}.pdf",
+                "report_html": f"/reports/{patient_id}/{report_id}.html"
             }
         )
     except Exception as e:
