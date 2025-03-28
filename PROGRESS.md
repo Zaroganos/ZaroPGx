@@ -13,20 +13,20 @@ ZaroPGx is a pharmacogenomics analysis platform using Docker-based microservices
 
 | Service | Status | Description | Issues/Next Steps |
 |---------|--------|-------------|------------------|
-| **Main App (FastAPI)** | 🟡 Building | Main application handling UI, reports, user auth | Health check issues being resolved |
+| **Main App (FastAPI)** | 🟢 Working | Main application handling UI, reports, user auth | API is accessible at port 8765 |
 | **PostgreSQL Database** | 🟢 Working | Stores CPIC guidelines, user data, reports | Need to add seed data scripts |
-| **PharmCAT Service** | 🟢 Working | Using official pgkb/pharmcat Docker image | JAR file mounted to wrapper container |
-| **PharmCAT Wrapper** | 🟡 Building | Python wrapper providing REST API for PharmCAT | Now directly calls PharmCAT JAR file |
-| **Aldy Service** | 🟡 Building | CYP2D6 specific genotype caller | Need to verify functionality |
+| **PharmCAT Service** | 🟡 Building | Using official pgkb/pharmcat Docker image | Container restarting, needs further investigation |
+| **PharmCAT Wrapper** | 🟢 Working | Python wrapper providing REST API for PharmCAT | API accessible via port 5001 |
+| **Aldy Service** | 🟡 Building | CYP2D6 specific genotype caller | Container restarting, needs further investigation |
 
 ### 2. Docker Infrastructure
 
 | Component | Status | Description | Issues/Next Steps |
 |-----------|--------|-------------|------------------|
-| **Docker Compose** | 🟡 In Progress | Multi-container orchestration | Health check configuration optimizations |
-| **Network Config** | 🟢 Working | PGX-Network for service communication | - |
+| **Docker Compose** | 🟢 Working | Multi-container orchestration | Core services up and running |
+| **Network Config** | 🟢 Working | PGX-Network for service communication | Services communicating successfully |
 | **Volumes** | 🟢 Working | Data persistence and sharing | Using volume mounts for JAR sharing |
-| **Health Checks** | 🟠 Problematic | Container health monitoring | Fixing issues with Flask/Gunicorn containers |
+| **Health Checks** | 🟡 In Progress | Container health monitoring | Temporarily disabled for debugging purposes |
 
 ### 3. Features & Capabilities
 
@@ -36,48 +36,49 @@ ZaroPGx is a pharmacogenomics analysis platform using Docker-based microservices
 | **Genotype Extraction** | 🟡 In Progress | Star allele calling from genetic data | Integration between services needed |
 | **Report Generation** | 🔴 Not Started | PDF reports for clinical use | Templates and rendering needed |
 | **User Authentication** | 🟡 Basic | Token-based authentication | Need real user database |
-| **API Endpoints** | 🟡 In Progress | REST API for service interactions | Documentation needed |
+| **API Endpoints** | 🟢 Working | REST API for service interactions | API documentation accessible at /docs |
 
 ## Recent Changes
 
-1. **Critical Fix**: Completely redesigned PharmCAT integration:
-   - Removed Docker CLI dependency which was causing build failures
-   - Added direct JAR execution with Java in the wrapper container
-   - Created a shared volume to mount the PharmCAT JAR file
-   - Updated wrapper code to use the command line arguments documented in the PharmCAT docs
+1. **Critical Fix**: Fixed Docker volume mounting issue:
+   - Changed app container mount from root `/` to `/app` directory
+   - Added proper PYTHONPATH environment variable
+   - Fixed uvicorn command to correctly locate app modules
 
-2. **Major Update**: Switched to the official pgkb/pharmcat Docker image:
+2. **Environment Variable Fix**: Properly configured .env file:
+   - Fixed POSTGRES_PASSWORD variable
+   - Fixed SECRET_KEY variable
+   - Ensured environment variables are properly passed to containers
+
+3. **Database Connection**: Fixed PostgreSQL connection issues:
+   - Ensured proper environment variables for database credentials
+   - Updated port mapping to avoid conflicts (5444:5432)
+   - Verified database initialization with proper credentials
+
+4. **Health Check Improvements**:
+   - Temporarily disabled complex health checks for debugging
+   - Simplified health checks to ensure core functionality works
+   - Will re-enable proper health checks in next iteration
+
+5. **Major Update**: Switched to the official pgkb/pharmcat Docker image:
    - Removed custom PharmCAT Dockerfile in favor of the maintained image
    - Updated PharmCAT wrapper to communicate with PharmCAT
    - Updated volume mappings to match the official image expectations
 
-3. Fixed Java dependency issues in Dockerfiles:
+6. Fixed Java dependency issues in Dockerfiles:
    - Changed from `openjdk-11-jre-headless` to `default-jre`
    - Added Java JRE to PharmCAT wrapper container
 
-4. Created PharmCAT service infrastructure:
-   - Created Python wrapper with REST API
-   - Added health check scripts
-
-5. Fixed container health check issues:
-   - Created custom health check scripts
-   - Added proper health check endpoints to services
-   - Increased timeout periods for slow-starting services
-
-6. Fixed dependency issues:
-   - Added proper requirements.txt for Python services
-   - Fixed package dependency resolution issues
-
 ## Current Challenges
 
-1. **Container Health Checks**: Container health checks are failing, particularly for PharmCAT wrapper service. Investigation ongoing.
+1. **PharmCAT & Aldy Services**: These two services are still experiencing restart issues and require further investigation.
 
 2. **Cross-Service Communication**: Need to ensure proper API communication between services, especially for:
    - Main app to PharmCAT wrapper
    - Main app to Aldy service
    - All services to PostgreSQL
 
-3. **Environment Configuration**: Need proper .env file configuration for production deployment.
+3. **Health Checks**: Re-implement proper health checks after core functionality is verified.
 
 ## Upcoming Tasks
 
@@ -87,9 +88,11 @@ ZaroPGx is a pharmacogenomics analysis platform using Docker-based microservices
 
 3. **Report Templates**: Create HTML/PDF templates for pharmacogenomic reports
 
-4. **API Documentation**: Generate Swagger/OpenAPI documentation for all services
+4. **API Documentation**: Complete Swagger/OpenAPI documentation for all services
 
 5. **Testing Scripts**: Create testing scripts to verify end-to-end functionality
+
+6. **Fix Restarting Services**: Investigate and resolve issues with PharmCAT and Aldy containers
 
 ## Notes
 
@@ -97,4 +100,6 @@ ZaroPGx is a pharmacogenomics analysis platform using Docker-based microservices
 - Using official PharmCAT Docker image (pgkb/pharmcat)
 - Directly calling PharmCAT JAR file as per documentation: https://pharmcat.org/using/Running-PharmCAT/
 - Python 3.10 for Flask/FastAPI services
-- PostgreSQL 15 for database 
+- PostgreSQL 15 for database
+- The FastAPI application is accessible at http://localhost:8765
+- API documentation is available at http://localhost:8765/docs 
